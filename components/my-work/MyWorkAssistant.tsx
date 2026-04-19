@@ -342,7 +342,9 @@ export default function MyWorkAssistant() {
       abortRef.current?.abort();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedItem.expenseId, moduleId]);
+  // Include has_xml so the insight re-fires when document state loads after
+  // the initial expense selection (which arrives asynchronously via loadDraftDocs).
+  }, [selectedItem.expenseId, moduleId, (selectedItem.extra as Record<string, unknown>)?.has_xml]);
 
   // Chat
   const sendMessage = async (prompt: string) => {

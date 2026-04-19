@@ -154,7 +154,7 @@ export interface MyWorkContextValue {
   selectedItem: SelectedWorkItem;
 
   /** Replace the current selection (called by the active module's list panel) */
-  setSelectedItem: (item: Partial<SelectedWorkItem>) => void;
+  setSelectedItem: (item: Partial<SelectedWorkItem> | ((prev: SelectedWorkItem) => Partial<SelectedWorkItem>)) => void;
 
   /** Clear the current selection */
   clearSelectedItem: () => void;
@@ -277,9 +277,15 @@ export function MyWorkProvider({ children }: { children: ReactNode }) {
 
   // ── Selection helpers ────────────────────────────────────────────────────
 
-  const setSelectedItem = useCallback((patch: Partial<SelectedWorkItem>) => {
-    setSelectedItemState((prev) => ({ ...prev, ...patch }));
-  }, []);
+  const setSelectedItem = useCallback(
+    (patchOrFn: Partial<SelectedWorkItem> | ((prev: SelectedWorkItem) => Partial<SelectedWorkItem>)) => {
+      setSelectedItemState((prev) => {
+        const patch = typeof patchOrFn === "function" ? patchOrFn(prev) : patchOrFn;
+        return { ...prev, ...patch };
+      });
+    },
+    [],
+  );
 
   const clearSelectedItem = useCallback(() => {
     setSelectedItemState(EMPTY_SELECTION);

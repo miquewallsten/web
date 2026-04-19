@@ -105,16 +105,22 @@ export default function MyExpensesModule() {
       setDraftState(null);
       clearSelectedItem();
     } else {
-      // Broadcast shallow item immediately; loadDraftDocs will enrich it.
-      setSelectedItem({
+      // Broadcast basic fields immediately so Copilot has something to show
+      // while loadDraftDocs fetches document state.
+      // IMPORTANT: merge into existing extra rather than replacing it so that
+      // any already-loaded doc state (has_xml, sat_status, etc.) is preserved
+      // when this is called with the same expense id (e.g. after a list refresh).
+      setSelectedItem((prev) => ({
         expenseId: exp.id,
         extra: {
+          // Keep prior doc state only when the expense id hasn't changed.
+          ...(prev?.expenseId === exp.id ? (prev?.extra ?? {}) : {}),
           status:            exp.status,
           detected_category: exp.detected_category,
           account_code:      exp.account_code,
           description:       exp.description,
         },
-      });
+      }));
     }
   }, [setSelectedItem, clearSelectedItem]);
 
@@ -240,9 +246,13 @@ export default function MyExpensesModule() {
   }, [userIdStr, setSelectedItem]);
 
   // Reload draft state whenever the selected expense changes.
+  // Use the full object as dep (not selected?.id) so this re-fires when a
+  // new Expense object is set even if the id happens to be the same
+  // (e.g. after a list refresh that re-creates the same expense object).
   useEffect(() => {
-    if (selected?.id) loadDraftDocs(selected.id);
-  }, [selected?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!selected) return;
+    loadDraftDocs(selected.id);
+  }, [selected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Callback for EmployeeExpenseDetail to trigger a doc refresh (after upload).
   const handleDocRefreshNeeded = useCallback(() => {
